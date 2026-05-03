@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Motor de Busca — Algoritmos Avançados</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:       #0d0f14;
+      --surface:  #13161e;
+      --card:     #191d28;
+      --border:   #252a38;
+      --accent:   #5b8fff;
+      --accent2:  #3dffa8;
+      --warn:     #ff6b6b;
+      --text:     #e4e8f7;
+      --muted:    #5b6282;
+      --code:     #a9b1d6;
+      --radius:   10px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ── */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 18px 40px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--surface);
+    }
+
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 8px;
+      display: grid; place-items: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    header h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+
+    header span {
+      font-size: .75rem;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+      margin-left: auto;
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+    }
+
+    /* ── MAIN LAYOUT ── */
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 0;
+    }
+
+    /* ── SIDEBAR (controls) ── */
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 32px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    .section-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .65rem;
+      font-weight: 600;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    /* Upload */
+    .upload-area {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 28px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      position: relative;
+    }
+    .upload-area:hover, .upload-area.drag { border-color: var(--accent); background: rgba(91,143,255,.05); }
+    .upload-area input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .upload-icon { font-size: 2rem; margin-bottom: 10px; }
+    .upload-area p { font-size: .85rem; color: var(--muted); line-height: 1.5; }
+    .upload-area p strong { color: var(--accent); }
+    .file-badge {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      background: rgba(61,255,168,.08);
+      border: 1px solid rgba(61,255,168,.25);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .75rem;
+      color: var(--accent2);
+      margin-top: 10px;
+      word-break: break-all;
+    }
+    .file-badge.show { display: flex; }
+
+    /* Select */
+    .field-group { display: flex; flex-direction: column; gap: 8px; }
+
+    select, input[type="text"] {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .88rem;
+      padding: 12px 14px;
+      width: 100%;
+      outline: none;
+      transition: border-color .2s;
+      appearance: none;
+    }
+    select:focus, input[type="text"]:focus { border-color: var(--accent); }
+    select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235b6282' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; cursor: pointer; }
+
+    .algo-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .algo-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .65rem;
+      padding: 3px 8px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .algo-pill.active { border-color: var(--accent); color: var(--accent); background: rgba(91,143,255,.1); }
+
+    /* Input busca */
+    .search-wrapper { position: relative; }
+    .search-wrapper input { padding-left: 40px; }
+    .search-wrapper .search-ico {
+      position: absolute;
+      left: 14px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+      font-size: 16px;
+    }
+
+    /* Botão */
+    button#btn-search {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--accent), #3a6bdf);
+      border: none;
+      border-radius: var(--radius);
+      color: #fff;
+      font-family: 'Syne', sans-serif;
+      font-size: .95rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+      cursor: pointer;
+      transition: opacity .2s, transform .1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    button#btn-search:hover { opacity: .88; }
+    button#btn-search:active { transform: scale(.98); }
+    button#btn-search:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ── RIGHT: results panel ── */
+    .results-panel {
+      padding: 32px 36px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      overflow-y: auto;
+    }
+
+    .results-panel h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: .04em;
+    }
+
+    /* Empty state */
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      color: var(--muted);
+      font-size: .9rem;
+      text-align: center;
+    }
+    .empty-state .empty-icon { font-size: 3.5rem; opacity: .35; }
+    .empty-state p { max-width: 260px; line-height: 1.6; }
+
+    /* Result cards */
+    #result-area { display: none; flex-direction: column; gap: 20px; }
+    #result-area.show { display: flex; }
+
+    .status-card {
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border: 1px solid transparent;
+    }
+    .status-card.found {
+      background: rgba(61,255,168,.07);
+      border-color: rgba(61,255,168,.25);
+    }
+    .status-card.not-found {
+      background: rgba(255,107,107,.07);
+      border-color: rgba(255,107,107,.25);
+    }
+    .status-icon { font-size: 2rem; }
+    .status-card .status-text h3 { font-size: 1.15rem; font-weight: 800; }
+    .status-card .status-text p { font-size: .8rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-top: 3px; }
+    .status-card.found .status-text h3 { color: var(--accent2); }
+    .status-card.not-found .status-text h3 { color: var(--warn); }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px;
+    }
+    .metric-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .metric-card .metric-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .6rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .metric-card .metric-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .metric-card .metric-unit {
+      font-size: .7rem;
+      color: var(--muted);
+      margin-left: 4px;
+    }
+
+    /* Positions list */
+    .positions-block {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+    }
+    .positions-block .section-label { margin-bottom: 12px; }
+    .positions-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      max-height: 140px;
+      overflow-y: auto;
+    }
+    .pos-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .72rem;
+      background: rgba(91,143,255,.12);
+      border: 1px solid rgba(91,143,255,.25);
+      color: var(--accent);
+      padding: 3px 9px;
+      border-radius: 4px;
+    }
+    .no-positions {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .8rem;
+      color: var(--muted);
+    }
+
+    /* Algo badge */
+    .algo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .78rem;
+      padding: 6px 14px;
+      background: rgba(91,143,255,.1);
+      border: 1px solid rgba(91,143,255,.25);
+      border-radius: 20px;
+      color: var(--accent);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* Loading */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+
+    @media (max-width: 780px) {
+      main { grid-template-columns: 1fr; }
+      .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
+      header { padding: 14px 20px; }
+      .results-panel { padding: 24px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo-icon">🔍</div>
+  <h1>Motor de Busca em Documentos</h1>
+  <span>Algoritmos Avançados</span>
+</header>
+
+<main>
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+
+    <!-- 1. Upload -->
+    <div>
+      <div class="section-label">01 — Documento</div>
+      <div class="upload-area" id="upload-area">
+        <input type="file" id="file-input" accept=".txt,.pdf" />
+        <div class="upload-icon">📄</div>
+        <p>Arraste um arquivo ou <strong>clique para selecionar</strong><br>
+        <small>TXT obrigatório · PDF (bônus)</small></p>
+      </div>
+      <div class="file-badge" id="file-badge">
+        <span>📎</span>
+        <span id="file-name">—</span>
+      </div>
+    </div>
+
+    <!-- 2. Algoritmo -->
+    <div class="field-group">
+      <div class="section-label">02 — Algoritmo de Busca</div>
+      <select id="algo-select">
+        <option value="bruteforce">Força Bruta (Naive) — O(N·M)</option>
+        <option value="kmp">KMP — Knuth-Morris-Pratt — O(N+M)</option>
+        <option value="rabinkarp">Rabin-Karp — O(N+M) esperado</option>
+        <option value="boyermoore">Boyer-Moore — O(N/M) melhor caso</option>
+      </select>
+      <div class="algo-pills">
+        <span class="algo-pill active" data-algo="bruteforce">Bruta</span>
+        <span class="algo-pill" data-algo="kmp">KMP</span>
+        <span class="algo-pill" data-algo="rabinkarp">Rabin-Karp</span>
+        <span class="algo-pill" data-algo="boyermoore">Boyer-Moore</span>
+      </div>
+    </div>
+
+    <!-- 3. Busca -->
+    <div class="field-group">
+      <div class="section-label">03 — Termo de Busca</div>
+      <div class="search-wrapper">
+        <span class="search-ico">⌕</span>
+        <input type="text" id="search-input" placeholder="palavra ou trecho..." />
+      </div>
+    </div>
+
+    <!-- 4. Botão -->
+    <button id="btn-search" disabled>
+      <span>🔎</span> Pesquisar
+    </button>
+
+  </aside>
+
+  <!-- ── RESULTS ── -->
+  <section class="results-panel">
+
+    <!-- Empty -->
+    <div class="empty-state" id="empty-state">
+      <div class="empty-icon">📂</div>
+      <p>Carregue um documento, escolha um algoritmo e insira um termo para começar a busca.</p>
+    </div>
+
+    <!-- Result area -->
+    <div id="result-area">
+
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+        <h2>Resultado da Busca</h2>
+        <div class="algo-badge" id="algo-tag">⚙ —</div>
+      </div>
+
+      <!-- Status -->
+      <div class="status-card" id="status-card">
+        <div class="status-icon" id="status-icon">—</div>
+        <div class="status-text">
+          <h3 id="status-text">—</h3>
+          <p id="status-sub">—</p>
+        </div>
+      </div>
+
+      <!-- Metrics -->
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">⏱ Tempo</div>
+          <div class="metric-value"><span id="m-time">—</span><span class="metric-unit">ms</span></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">🔁 Ocorrências</div>
+          <div class="metric-value"><span id="m-count">—</span></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">📄 N (texto)</div>
+          <div class="metric-value"><span id="m-n">—</span><span class="metric-unit">chars</span></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">🔤 M (padrão)</div>
+          <div class="metric-value"><span id="m-m">—</span><span class="metric-unit">chars</span></div>
+        </div>
+      </div>
+
+      <!-- Positions -->
+      <div class="positions-block">
+        <div class="section-label">Posições (índices)</div>
+        <div class="positions-list" id="positions-list"></div>
+      </div>
+
+    </div>
+
+  </section>
+
+</main>
+
+<script>
+  /* ─────────────────────────────────────────────
+     ALGORITMOS DE SUBSTRING SEARCH
+  ───────────────────────────────────────────── */
+
+  function bruteForce(text, pattern) {
+    const n = text.length, m = pattern.length, positions = [];
+    for (let i = 0; i <= n - m; i++) {
+      let j = 0;
+      while (j < m && text[i + j] === pattern[j]) j++;
+      if (j === m) positions.push(i);
+    }
+    return positions;
+  }
+
+  function kmp(text, pattern) {
+    const n = text.length, m = pattern.length, positions = [];
+    if (m === 0) return positions;
+    // Build failure table
+    const fail = new Array(m).fill(0);
+    let k = 0;
+    for (let i = 1; i < m; i++) {
+      while (k > 0 && pattern[k] !== pattern[i]) k = fail[k - 1];
+      if (pattern[k] === pattern[i]) k++;
+      fail[i] = k;
+    }
+    // Search
+    let q = 0;
+    for (let i = 0; i < n; i++) {
+      while (q > 0 && pattern[q] !== text[i]) q = fail[q - 1];
+      if (pattern[q] === text[i]) q++;
+      if (q === m) { positions.push(i - m + 1); q = fail[q - 1]; }
+    }
+    return positions;
+  }
+
+  function rabinKarp(text, pattern) {
+    const n = text.length, m = pattern.length, positions = [];
+    if (m === 0 || m > n) return positions;
+    const BASE = 31, MOD = 1_000_000_007n;
+    const b = BigInt(BASE);
+    let patHash = 0n, winHash = 0n, power = 1n;
+    for (let i = 0; i < m; i++) {
+      const pc = BigInt(pattern.charCodeAt(i));
+      const tc = BigInt(text.charCodeAt(i));
+      patHash = (patHash * b + pc) % MOD;
+      winHash = (winHash * b + tc) % MOD;
+      if (i > 0) power = (power * b) % MOD;
+    }
+    if (winHash === patHash && text.slice(0, m) === pattern) positions.push(0);
+    for (let i = 1; i <= n - m; i++) {
+      const out = BigInt(text.charCodeAt(i - 1));
+      const inn = BigInt(text.charCodeAt(i + m - 1));
+      winHash = ((winHash - out * power % MOD + MOD) * b + inn) % MOD;
+      if (winHash === patHash && text.slice(i, i + m) === pattern) positions.push(i);
+    }
+    return positions;
+  }
+
+  function boyerMoore(text, pattern) {
+    const n = text.length, m = pattern.length, positions = [];
+    if (m === 0) return positions;
+    // Bad-character table
+    const bad = {};
+    for (let i = 0; i < m; i++) bad[pattern[i]] = i;
+    let s = 0;
+    while (s <= n - m) {
+      let j = m - 1;
+      while (j >= 0 && pattern[j] === text[s + j]) j--;
+      if (j < 0) {
+        positions.push(s);
+        s += (s + m < n) ? m - (bad[text[s + m]] ?? -1) : 1;
+      } else {
+        s += Math.max(1, j - (bad[text[s + j]] ?? -1));
+      }
+    }
+    return positions;
+  }
+
+  const ALGOS = {
+    bruteforce: { fn: bruteForce,  label: 'Força Bruta (Naive)' },
+    kmp:        { fn: kmp,         label: 'KMP — Knuth-Morris-Pratt' },
+    rabinkarp:  { fn: rabinKarp,   label: 'Rabin-Karp' },
+    boyermoore: { fn: boyerMoore,  label: 'Boyer-Moore' },
+  };
+
+  /* ─────────────────────────────────────────────
+     STATE
+  ───────────────────────────────────────────── */
+  let documentText = '';
+  let currentFile = null;
+
+  /* ─────────────────────────────────────────────
+     DOM REFS
+  ───────────────────────────────────────────── */
+  const fileInput    = document.getElementById('file-input');
+  const uploadArea   = document.getElementById('upload-area');
+  const fileBadge    = document.getElementById('file-badge');
+  const fileNameEl   = document.getElementById('file-name');
+  const algoSelect   = document.getElementById('algo-select');
+  const searchInput  = document.getElementById('search-input');
+  const btnSearch    = document.getElementById('btn-search');
+  const emptyState   = document.getElementById('empty-state');
+  const resultArea   = document.getElementById('result-area');
+
+  /* ─────────────────────────────────────────────
+     FILE UPLOAD
+  ───────────────────────────────────────────── */
+  function handleFile(file) {
+    if (!file) return;
+    currentFile = file;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      documentText = e.target.result;
+      fileNameEl.textContent = file.name;
+      fileBadge.classList.add('show');
+      checkReady();
+    };
+    reader.readAsText(file);
+  }
+
+  fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
+
+  uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('drag'); });
+  uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag'));
+  uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove('drag');
+    handleFile(e.dataTransfer.files[0]);
+  });
+
+  /* ─────────────────────────────────────────────
+     ALGO PILLS sync with select
+  ───────────────────────────────────────────── */
+  document.querySelectorAll('.algo-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      algoSelect.value = pill.dataset.algo;
+      syncPills();
+    });
+  });
+  algoSelect.addEventListener('change', syncPills);
+
+  function syncPills() {
+    document.querySelectorAll('.algo-pill').forEach(p => {
+      p.classList.toggle('active', p.dataset.algo === algoSelect.value);
+    });
+  }
+
+  /* ─────────────────────────────────────────────
+     ENABLE SEARCH
+  ───────────────────────────────────────────── */
+  function checkReady() {
+    btnSearch.disabled = !(documentText && searchInput.value.trim());
+  }
+  searchInput.addEventListener('input', checkReady);
+
+  /* ─────────────────────────────────────────────
+     SEARCH
+  ───────────────────────────────────────────── */
+  btnSearch.addEventListener('click', runSearch);
+  searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !btnSearch.disabled) runSearch(); });
+
+  async function runSearch() {
+    const pattern = searchInput.value;
+    const algoKey = algoSelect.value;
+
+    btnSearch.innerHTML = '<div class="spinner"></div> Buscando…';
+    btnSearch.disabled = true;
+
+    try {
+      const formData = new FormData();
+      formData.append('file', currentFile);
+      formData.append('algorithm', algoKey);
+      formData.append('pattern', pattern);
+
+      const res = await fetch('/search', { method: 'POST', body: formData });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: res.statusText }));
+        throw new Error(err.detail || 'Erro na busca');
+      }
+
+      const data = await res.json();
+      renderResult({
+        found:     data.found,
+        positions: data.positions,
+        elapsed:   data.duration_ms.toFixed(3),
+        n:         data.n,
+        m:         data.m,
+        algo:      data.algorithm_label,
+        pattern,
+        truncated: data.positions_truncated,
+      });
+    } catch (e) {
+      // Fallback: run in-browser if backend unreachable
+      const algo = ALGOS[algoKey];
+      if (algo && documentText) {
+        const t0 = performance.now();
+        const positions = algo.fn(documentText, pattern);
+        const elapsed = (performance.now() - t0).toFixed(3);
+        renderResult({ found: positions.length > 0, positions, elapsed,
+          n: documentText.length, m: pattern.length, algo: algo.label, pattern });
+      } else {
+        alert('Erro: ' + e.message);
+      }
+    } finally {
+      btnSearch.innerHTML = '<span>🔎</span> Pesquisar';
+      btnSearch.disabled = false;
+    }
+  }
+
+  /* ─────────────────────────────────────────────
+     RENDER RESULT
+  ───────────────────────────────────────────── */
+  function renderResult({ found, positions, elapsed, n, m, algo, pattern, truncated }) {
+    emptyState.style.display = 'none';
+    resultArea.classList.add('show');
+
+    const statusCard = document.getElementById('status-card');
+    statusCard.className = 'status-card ' + (found ? 'found' : 'not-found');
+    document.getElementById('status-icon').textContent = found ? '✅' : '❌';
+    document.getElementById('status-text').textContent = found ? 'Conteúdo Encontrado' : 'Não Encontrado';
+    document.getElementById('status-sub').textContent =
+      found
+        ? `"${truncate(pattern, 40)}" aparece ${positions.length}× no documento`
+        : `"${truncate(pattern, 40)}" não foi localizado no documento`;
+
+    document.getElementById('algo-tag').innerHTML = `⚙ ${algo}`;
+    document.getElementById('m-time').textContent  = elapsed;
+    document.getElementById('m-count').textContent = positions.length;
+    document.getElementById('m-n').textContent     = n.toLocaleString('pt-BR');
+    document.getElementById('m-m').textContent     = m;
+
+    const posList = document.getElementById('positions-list');
+    posList.innerHTML = '';
+    if (positions.length === 0) {
+      posList.innerHTML = '<span class="no-positions">Nenhuma posição encontrada.</span>';
+    } else {
+      const max = Math.min(positions.length, 200);
+      for (let i = 0; i < max; i++) {
+        const tag = document.createElement('span');
+        tag.className = 'pos-tag';
+        tag.textContent = positions[i].toLocaleString('pt-BR');
+        posList.appendChild(tag);
+      }
+      if (truncated || positions.length > 200) {
+        const more = document.createElement('span');
+        more.className = 'no-positions';
+        more.textContent = `… lista limitada a ${max} posições exibidas`;
+        posList.appendChild(more);
+      }
+    }
+  }
+
+  function truncate(str, max) {
+    return str.length <= max ? str : str.slice(0, max) + '…';
+  }
+</script>
+</body>
+</html>
