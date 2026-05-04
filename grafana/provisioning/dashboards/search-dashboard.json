@@ -21,7 +21,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(increase(motorbusca_search_requests_total_total[1h]))",
+          "expr": "sum(increase(motorbusca_search_requests_total[1h]))",
           "legendFormat": "Total"
         }
       ]
@@ -43,7 +43,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(increase(motorbusca_search_requests_total_total{found=\"true\"}[1h]))",
+          "expr": "sum(increase(motorbusca_search_requests_total{found=\"true\"}[1h]))",
           "legendFormat": "Encontradas"
         }
       ]
@@ -62,7 +62,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(rate(motorbusca_search_duration_ms_sum[5m])) / sum(rate(motorbusca_search_duration_ms_count[5m]))",
+          "expr": "sum(motorbusca_search_duration_ms_milliseconds_sum) / sum(motorbusca_search_duration_ms_milliseconds_count)",
           "legendFormat": "Média (ms)"
         }
       ]
@@ -83,7 +83,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "count(count by (algorithm) (motorbusca_search_requests_total_total))",
+          "expr": "count(count by (algorithm) (motorbusca_search_requests_total))",
           "legendFormat": "Algoritmos"
         }
       ]
@@ -102,7 +102,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum by (algorithm) (increase(motorbusca_search_requests_total_total[1h]))",
+          "expr": "sum by (algorithm) (increase(motorbusca_search_requests_total[1h]))",
           "legendFormat": "{{algorithm}}"
         }
       ]
@@ -120,7 +120,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum by (algorithm) (rate(motorbusca_search_duration_ms_sum[5m])) / sum by (algorithm) (rate(motorbusca_search_duration_ms_count[5m]))",
+          "expr": "sum by (algorithm) (motorbusca_search_duration_ms_milliseconds_sum) / sum by (algorithm) (motorbusca_search_duration_ms_milliseconds_count)",
           "legendFormat": "{{algorithm}}"
         }
       ]
@@ -137,26 +137,43 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum by (algorithm) (rate(motorbusca_search_requests_total_total[1m]))",
+          "expr": "sum by (algorithm) (rate(motorbusca_search_requests_total[1m]))",
           "legendFormat": "{{algorithm}}"
         }
       ]
     },
     {
       "id": 8,
-      "type": "heatmap",
-      "title": "Distribuição do Tempo de Execução (ms)",
+      "type": "timeseries",
+      "title": "Latência por Percentil (ms)",
       "gridPos": { "x": 0, "y": 20, "w": 24, "h": 8 },
       "options": {
-        "calculate": false,
-        "color": { "scheme": "Spectral", "mode": "scheme" }
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "ms" },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "p50" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "p90" }, "properties": [{ "id": "color", "value": { "fixedColor": "yellow", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "p99" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] }
+        ]
       },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(rate(motorbusca_search_duration_ms_bucket[5m])) by (le)",
-          "legendFormat": "{{le}}",
-          "format": "heatmap"
+          "expr": "histogram_quantile(0.50, sum(rate(motorbusca_search_duration_ms_milliseconds_bucket[2m])) by (le))",
+          "legendFormat": "p50"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.90, sum(rate(motorbusca_search_duration_ms_milliseconds_bucket[2m])) by (le))",
+          "legendFormat": "p90"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.99, sum(rate(motorbusca_search_duration_ms_milliseconds_bucket[2m])) by (le))",
+          "legendFormat": "p99"
         }
       ]
     },
@@ -182,7 +199,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum by (algorithm) (increase(motorbusca_search_requests_total_total{found=\"true\"}[1h]))",
+          "expr": "sum by (algorithm) (increase(motorbusca_search_requests_total{found=\"true\"}[1h]))",
           "legendFormat": "{{algorithm}} ✓"
         }
       ]
